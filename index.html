@@ -1,0 +1,736 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><title>GLMH 試着室</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;800&display=swap" rel="stylesheet">
+<style>
+/* フォトスタジオの背景紙（ステージ）＋手元のコントロール卓（パネル）。PCは左ステージ・右パネル、スマホは上下 */
+:root{
+  --bg:#f7f4f2;--panel:#ffffff;--ink:#2a2633;--sub:#7a7385;--line:#ebe5ee;
+  --acc:#ff6f61;--accInk:#fff;--chip:#f3eef5;--sky1:#cfe6ff;--sky2:#ffe6dc;--skin:#f4e1d6;
+  --font:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN",system-ui,sans-serif}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#15141c;--panel:#1f1d29;--ink:#f1edf6;--sub:#a8a1b5;--line:#34303f;--chip:#2a2736;--sky1:#232542;--sky2:#4a2f4c;--skin:#e6d2c6;color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#15141c;--panel:#1f1d29;--ink:#f1edf6;--sub:#a8a1b5;--line:#34303f;--chip:#2a2736;--sky1:#232542;--sky2:#4a2f4c;--skin:#e6d2c6;color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 var(--font);overflow-x:clip}
+#app{display:grid;grid-template-columns:minmax(0,1fr) 360px;height:100%}
+#stage{position:relative;background:linear-gradient(180deg,var(--sky1),var(--sky2));overflow:hidden;touch-action:none}
+#stage[data-bg=sea]{background:
+  radial-gradient(circle at 80% 14%,rgba(255,250,225,.95) 0,rgba(255,243,196,.6) 50px,rgba(255,243,196,0) 220px),
+  linear-gradient(180deg,#7cc8f5 0%,#bfe6ff 52%,#e8f6ff 57%,#58c3e6 57.3%,#3aa9d8 66%,#2f97c9 74%,#bfe9f2 74.4%,#f6e3c0 76%,#f3d9ae 100%)}
+#stage[data-bg=white]{background:#fff}
+#stage[data-bg=sea] .top h1,#stage[data-bg=white] .top h1{color:#2a2633}
+#c{position:absolute;inset:0;width:100%;height:100%;display:block}
+.top{position:absolute;left:max(14px,env(safe-area-inset-left,0px));right:14px;top:12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;pointer-events:none}
+.top h1{margin:0;font-size:17px;font-weight:800;letter-spacing:.02em}
+.chips{display:flex;gap:6px;flex-wrap:wrap;pointer-events:auto}
+.chip{border:0;border-radius:999px;padding:0 14px;height:36px;font:inherit;font-size:14px;background:color-mix(in srgb,var(--panel) 80%,transparent);color:var(--ink);cursor:pointer;backdrop-filter:blur(6px)}
+.chip[aria-pressed=true]{background:var(--ink);color:var(--panel)}
+.cam{position:absolute;left:50%;bottom:max(14px,env(safe-area-inset-bottom,0px));transform:translateX(-50%);display:flex;gap:4px;padding:5px;border-radius:999px;background:color-mix(in srgb,var(--panel) 85%,transparent);backdrop-filter:blur(8px);box-shadow:0 6px 20px rgb(0 0 0/.12);max-width:calc(100% - 20px);overflow-x:auto}
+.cam button{border:0;background:none;color:var(--ink);font:inherit;font-size:14px;height:40px;min-width:44px;padding:0 12px;border-radius:999px;cursor:pointer;white-space:nowrap}
+.cam button[aria-pressed=true]{background:var(--acc);color:var(--accInk)}
+.cam .sep{width:1px;background:var(--line);margin:6px 2px;flex:none}
+#loading{position:absolute;inset:0;display:grid;place-content:center;gap:10px;text-align:center;background:color-mix(in srgb,var(--sky1) 55%,transparent);transition:opacity .3s;padding:16px}
+#loading.hide{opacity:0;pointer-events:none}
+.bar{width:200px;height:8px;border-radius:9px;background:color-mix(in srgb,var(--ink) 12%,transparent);overflow:hidden;margin:auto}
+.bar i{display:block;height:100%;width:0;background:var(--acc);border-radius:9px;transition:width .2s}
+#panel{background:var(--panel);border-left:1px solid var(--line);overflow-y:auto;padding-block:18px 28px;padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px))}
+#panel h2{font-size:14px;color:var(--sub);font-weight:800;margin:20px 0 10px}
+#panel h2:first-child{margin-top:0}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.btn{border:0;border-radius:14px;min-height:52px;padding:6px 4px;font:inherit;font-size:14px;background:var(--chip);color:var(--ink);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transition:transform .12s,background .2s;text-align:center;line-height:1.3}
+.btn b{font-size:20px;line-height:1;font-weight:800}
+.btn:active{transform:scale(.96)}
+.btn[aria-pressed=true]{background:var(--acc);color:var(--accInk)}
+.btn.suit{padding:5px 5px 7px;font-size:12px;justify-content:flex-start}
+.btn.suit .th{display:block;width:100%;aspect-ratio:3/3.4;border-radius:10px;background-color:var(--skin);background-repeat:no-repeat;background-size:188% auto;background-position:50% 1%}
+.btn.suit canvas.th{background:var(--skin)}
+.btn.suit .th.none{display:grid;place-items:center;color:#9a8a90}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.tabs .chip{background:var(--chip);backdrop-filter:none;height:32px;font-size:13px}
+.dots{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 4px}
+.dots .chip{background:var(--chip);backdrop-filter:none;height:32px;font-size:13px;display:inline-flex;align-items:center;gap:6px;padding:0 11px}
+.tabs .chip[aria-pressed=true],.dots .chip[aria-pressed=true]{background:var(--ink);color:var(--panel)}
+.dots .chip i{width:13px;height:13px;border-radius:50%;border:1px solid var(--line)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid color-mix(in srgb,var(--acc) 60%,transparent);outline-offset:2px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:44px}
+.row label{font-size:15px}
+input[type=range]{width:55%;accent-color:var(--acc);height:28px}
+.sw{appearance:none;width:48px;height:28px;border-radius:99px;background:var(--line);position:relative;cursor:pointer;flex:none;transition:background .2s;margin:0}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgb(0 0 0/.25);transition:transform .2s}
+.sw:checked{background:var(--acc)}.sw:checked::after{transform:translateX(20px)}
+.model{display:flex;gap:8px;flex-wrap:wrap}
+select,.file{font:inherit;font-size:14px;height:40px;border-radius:12px;border:0;background:var(--chip);color:var(--ink);padding:0 12px}
+.file{display:inline-flex;align-items:center;cursor:pointer}.file input{display:none}
+.note{font-size:13px;color:var(--sub);margin:12px 0 0}
+@media(max-width:860px){
+  /* phone: the stage stays put at the top; only the panel scrolls, so the character is always in view */
+  #app{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,56%) minmax(0,1fr);height:100%}
+  #panel{border-left:0;border-top:1px solid var(--line);overflow-y:auto;-webkit-overflow-scrolling:touch}
+}
+@media(max-width:420px){.cam button{padding:0 9px;font-size:13px}.top h1{font-size:15px}}
+.shutter{position:absolute;right:max(14px,env(safe-area-inset-right,0px));bottom:calc(max(14px,env(safe-area-inset-bottom,0px)) + 62px);width:58px;height:58px;border-radius:50%;border:4px solid #fff;background:var(--acc);box-shadow:0 6px 20px rgb(0 0 0/.25);cursor:pointer;display:grid;place-items:center;padding:0}
+.shutter svg{width:26px;height:26px}
+.shutter:active{transform:scale(.92)}
+#flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;transition:opacity .35s}
+#flash.on{opacity:.85;transition:none}
+#shot{position:fixed;inset:0;z-index:20;background:rgb(10 8 14/.82);display:grid;place-items:center;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+#shot .box{background:var(--panel);color:var(--ink);border-radius:18px;padding:14px;display:grid;gap:10px;max-width:min(560px,100%);max-height:100%;overflow:auto}
+#shot img{width:100%;height:auto;border-radius:12px;display:block;-webkit-touch-callout:default;user-select:auto}
+#shot .acts{display:flex;gap:8px;flex-wrap:wrap}
+#shot .acts button{flex:1;border:0;border-radius:12px;height:44px;font:inherit;font-size:14px;cursor:pointer;background:var(--chip);color:var(--ink)}
+#shot .acts .main{background:var(--acc);color:var(--accInk)}
+#shot p{margin:0;font-size:13px;color:var(--sub)}
+@media(prefers-reduced-motion:reduce){.btn,.bar i,#loading{transition:none}}
+</style>
+<div id="shot" hidden>
+  <div class="box">
+    <img id="shotImg" alt="撮影した写真">
+    <p id="shotNote">画像を長押し（パソコンは右クリック）で保存できます。</p>
+    <div class="acts"><button class="main" id="shotSave">保存</button><button id="shotClose">閉じる</button></div>
+  </div>
+</div>
+<script type="importmap">
+{"imports":{
+  "three":"https://cdn.jsdelivr.net/npm/three@0.178.0/build/three.module.js",
+  "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.178.0/examples/jsm/",
+  "@pixiv/three-vrm":"https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@3.5.5/lib/three-vrm.module.min.js"
+}}
+</script>
+
+<div id="app">
+  <div id="stage">
+    <canvas id="c"></canvas>
+    <div class="top">
+      <h1>GLMH 試着室</h1>
+      <div class="chips" id="chips"></div>
+    </div>
+    <div class="cam" id="cam">
+      <button data-cam="face">顔</button>
+      <button data-cam="upper">上半身</button>
+      <button data-cam="thigh" aria-pressed="true">ひざ上</button>
+      <button data-cam="full">全身</button>
+      <button data-cam="back">背面</button>
+      <span class="sep"></span>
+      <button data-zoom="0.8" aria-label="ズームイン">＋</button>
+      <button data-zoom="1.25" aria-label="ズームアウト">−</button>
+    </div>
+    <button class="shutter" id="shutter" aria-label="写真を撮る"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
+    <div id="flash"></div>
+    <div id="loading"><div id="ltext">読み込み中…</div><div class="bar"><i id="lbar"></i></div></div>
+  </div>
+
+  <aside id="panel">
+    <h2>モデル</h2>
+    <div class="model">
+      <select id="modelSel" aria-label="モデル"></select>
+      <label class="file">VRMを開く<input type="file" id="fileIn" accept=".vrm,.glb"></label>
+    </div>
+
+    <h2>衣装</h2>
+    <div class="tabs" id="cats"></div>
+    <div class="row" id="sheerRow" hidden><label for="sheer">裏地なし（透け）</label><input id="sheer" class="sw" type="checkbox"></div>
+    <div class="grid" id="suits"></div>
+
+    <h2>タトゥー</h2>
+    <div class="dots" id="tink"></div>
+    <div class="grid" id="tattoos"></div>
+    <p class="note">いくつでも重ねられます。もう一度押すと外れます。</p>
+
+    <h2>インナー</h2>
+    <div class="grid" id="pasties"></div>
+    <div class="dots" id="pcolors"></div>
+    <div class="row"><label for="bottom">前張り＋後ろ</label><input id="bottom" class="sw" type="checkbox" checked></div>
+    <div class="grid" id="bases"></div>
+    <p class="note">ニップレスはモデルごとに胸の形を測って貼るので、胸の大きさや開き具合が違っても位置が合います。</p>
+
+    <h2>グラビアポーズ</h2>
+    <div class="grid" id="poses"></div>
+
+    <h2>表情</h2>
+    <div class="grid" id="expr"></div>
+    <div class="row" style="margin-top:10px"><label for="str">表情の強さ</label><input id="str" type="range" min="0" max="100" value="100"></div>
+    <div class="row"><label for="talk">おしゃべり（口パク）</label><input id="talk" class="sw" type="checkbox"></div>
+    <div class="row"><label for="blink">自動まばたき</label><input id="blink" class="sw" type="checkbox" checked></div>
+
+    <h2>動き</h2>
+    <div class="grid" id="acts"></div>
+
+    <h2>表示</h2>
+    <div class="row"><label for="look">カメラ目線</label><input id="look" class="sw" type="checkbox" checked></div>
+    <div class="row"><label for="spin">ぐるっと自動回転</label><input id="spin" class="sw" type="checkbox"></div>
+    <p class="note">ドラッグで回転、ピンチ／ホイールで拡大縮小、二本指（右ドラッグ）で移動できます。</p>
+  </aside>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+import {VRMLoaderPlugin, VRMUtils} from '@pixiv/three-vrm';
+{
+/* ---------- models ---------- */
+const BUNDLED = ['GLMH000','GLMA000','GLMB000','GLMJ000'];
+const SERIES = ['000','001','002','003','004','101','102','103','201','202','203','204','205','301','302','303','401','402','500','501','502','503','504','505'];
+const MODELS = [...['H','A','B'].flatMap(k => SERIES.map(n => 'GLM'+k+n)), ...['000','500','501','502','503','504','505'].map(n => 'GLMJ'+n)];
+const repoURL = name => `https://cdn.jsdelivr.net/gh/shigihara0426yokohama/glm-${name[3].toLowerCase()}@main/vrm/${name}.vrm`;
+
+const POSES = [['hip','腰に手','◇'],['head','片手を頭に','☆'],['behind','両手を頭の後ろ','✧'],['turn','振り返り','↺'],['lean','前かがみ','▽'],['scurve','S字立ち','S'],['peace','ピース','✌'],['crouch','しゃがみ','◡'],['knee','ひざ抱え','○']];
+const EXPR = [['neutral','通常','・'],['happy','笑顔','＾＾'],['relaxed','ほほえみ','‿'],['angry','怒り','＞＜'],['sad','悲しみ','；；'],['surprised','驚き','！']];
+const ACTS = [['idle','待機','〜'],['wave','手を振る','ﾉｼ'],['bow','お辞儀','↓'],['nod','うなずき','うん'],['tilt','首かしげ','？'],['think','考える','…'],['dance','ダンス','♪'],['jump','ジャンプ','↑'],['shy','照れ','♡']];
+const ONESHOT = {wave:3.2,bow:2.6,nod:1.6,tilt:2.8,think:3.4,shy:3.2};
+const ACT_EXPR = {wave:'happy',shy:'relaxed',think:'neutral',peace:'happy',hip:'relaxed',turn:'relaxed',lean:'happy',knee:'relaxed'};
+
+const $ = s => document.querySelector(s);
+const stage = $('#stage'), canvas = $('#c');
+const press = (sel, attr, val) => document.querySelectorAll(sel).forEach(b => b.setAttribute('aria-pressed', b.dataset[attr] === val));
+
+/* ---------- UI (studio) ---------- */
+$('#chips').innerHTML = [['sea','海'],['white','白'],['paper','背景紙']].map(([k,l]) => `<button class="chip" data-bg="${k}">背景：${l}</button>`).join('');
+function setBg(k){ stage.dataset.bg = k; press('.chip[data-bg]','bg',k); try{ localStorage.setItem('glmhBg',k); }catch(e){} }
+$('#chips').addEventListener('click', e => { const b = e.target.closest('[data-bg]'); if(b) setBg(b.dataset.bg); });
+$('#poses').innerHTML = POSES.map(([k,l,g]) => `<button class="btn" data-a="${k}"><b>${g}</b>${l}</button>`).join('');
+$('#expr').innerHTML = EXPR.map(([k,l,g]) => `<button class="btn" data-e="${k}"><b>${g}</b>${l}</button>`).join('');
+$('#acts').innerHTML = ACTS.map(([k,l,g]) => `<button class="btn" data-a="${k}"><b>${g}</b>${l}</button>`).join('');
+
+/* ---------- three ---------- */
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(30, 1, 0.05, 50);
+camera.position.set(0, 0.9, 4);
+const controls = new OrbitControls(camera, canvas);
+controls.target.set(0, 0.8, 0);
+controls.enableDamping = true; controls.minDistance = 0.25; controls.maxDistance = 8; controls.autoRotateSpeed = 1.6;
+scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+const sun = new THREE.DirectionalLight(0xffffff, 2.0); sun.position.set(1, 2.5, 2.5); scene.add(sun);
+const gcv = document.createElement('canvas'); gcv.width = gcv.height = 128;
+const gx = gcv.getContext('2d'), grd = gx.createRadialGradient(64,64,0,64,64,64);
+grd.addColorStop(0,'rgba(40,20,50,.30)'); grd.addColorStop(1,'rgba(40,20,50,0)'); gx.fillStyle = grd; gx.fillRect(0,0,128,128);
+const shadow = new THREE.Mesh(new THREE.PlaneGeometry(1,1), new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(gcv), transparent:true, depthWrite:false}));
+shadow.rotation.x = -Math.PI/2; shadow.position.y = 0.002; scene.add(shadow);
+function resize(){ const w = stage.clientWidth, h = stage.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / Math.max(1, h); camera.updateProjectionMatrix(); }
+new ResizeObserver(resize).observe(stage);
+
+/* ---------- state ---------- */
+let vrm = null, body = null, loadToken = 0, snap = true, T = 0;
+let marks = {top:1.55, head:1.4, chest:1.15, hips:0.85, seg:0.4};
+const hipsRest = new THREE.Vector3();
+const B = {};
+const FINGERS = ['rightIndexProximal','rightIndexIntermediate','rightMiddleProximal','rightMiddleIntermediate','rightRingProximal','rightRingIntermediate','rightLittleProximal','rightLittleIntermediate','rightThumbProximal','rightThumbDistal'];
+const BONES = ['hips','spine','chest','neck','head','leftUpperArm','rightUpperArm','leftLowerArm','rightLowerArm','leftHand','rightHand','leftUpperLeg','rightUpperLeg','leftLowerLeg','rightLowerLeg','leftFoot','rightFoot', ...FINGERS];
+let expr = 'neutral', strength = 1, talk = false, blinkOn = true, lookOn = true, camMode = 'thigh';
+let act = 'idle', actT = 0;
+const W = {happy:0,angry:0,sad:0,relaxed:0,surprised:0,aa:0,ih:0,ou:0,ee:0,oh:0,blink:0};
+let blinkTimer = 2, blinkT = -1, vowel = 'aa', vowelAmt = 0, vowelTimer = 0, hipsY = 0;
+const state = { inner: 'pasties', pasty: { shape: 'heart', color: 'black', bottom: true }, outfit: 'lingerie2_02_white_lace_ribbon', sheer: false, cat: 'lace', tattoos: [], ink: 'color' };
+let catalog = null;
+
+/* ---------- body texture, pasties ---------- */
+function findBody(){
+  const mats = []; let src = null;
+  vrm.scene.traverse(o => {
+    if (!o.isMesh) return;
+    for (const m of (Array.isArray(o.material) ? o.material : [o.material])) {
+      if (/Body_00_SKIN/.test(m.name) && m.map) { mats.push(m); src = src || m.map; }
+    }
+  });
+  if (!src) { body = null; return; }
+  const img = src.image, W = img.width, H = img.height;
+  const base = document.createElement('canvas'); base.width = W; base.height = H;
+  base.getContext('2d').drawImage(img, 0, 0);
+  const work = document.createElement('canvas'); work.width = W; work.height = H;
+  const tex = new THREE.CanvasTexture(work);
+  tex.flipY = src.flipY; tex.colorSpace = src.colorSpace; tex.wrapS = src.wrapS; tex.wrapT = src.wrapT; tex.anisotropy = 4;
+  for (const m of mats) {
+    const shadeSame = m.shadeMultiplyTexture && m.shadeMultiplyTexture.image === img;
+    m.map = tex; if (shadeSame) m.shadeMultiplyTexture = tex; m.needsUpdate = true;
+  }
+  body = { base, work, tex, nips: findNipples(W, H) };
+}
+
+// Breast apex per side, read from this model's own mesh, plus the local 3D->UV mapping there,
+// so pasties land on the most forward point of each breast whatever the breast size or spread.
+function findNipples(W, H){
+  vrm.scene.updateMatrixWorld(true);
+  const h = vrm.humanoid, bw = n => { const b = h.getRawBoneNode(n); return b ? b.getWorldPosition(new THREE.Vector3()) : null; };
+  const hips = bw('hips'), neck = bw('neck') || bw('upperChest'), head = bw('head'), eye = bw('leftEye');
+  if (!hips || !neck) return null;
+  const fs = (eye && head) ? Math.sign(eye.z - head.z) || 1 : 1;
+  const y0 = hips.y + 0.2 * (neck.y - hips.y), y1 = neck.y - 0.06;
+  const pts = [];
+  vrm.scene.traverse(o => {
+    if (!o.isMesh) return;
+    const ms = Array.isArray(o.material) ? o.material : [o.material];
+    if (!ms.some(m => /Body_00_SKIN/.test(m.name))) return;
+    const P = o.geometry.attributes.position, U = o.geometry.attributes.uv, Nn = o.geometry.attributes.normal; if (!P || !U) return;
+    const v = new THREE.Vector3(), nv = new THREE.Vector3(), nm = new THREE.Matrix3().getNormalMatrix(o.matrixWorld);
+    for (let i = 0; i < P.count; i++) {
+      v.fromBufferAttribute(P, i).applyMatrix4(o.matrixWorld);
+      if (v.y < y0 - 0.05 || v.y > y1 + 0.02) continue;
+      const nz = Nn ? nv.fromBufferAttribute(Nn, i).applyMatrix3(nm).normalize().z * fs : 1;
+      pts.push([v.x - hips.x, v.y, v.z * fs, U.getX(i), U.getY(i), nz]);
+    }
+  });
+  if (!pts.length) return null;
+  const out = [];
+  for (const side of [1, -1]) {
+    let best = null;
+    for (const p of pts) if (p[0] * side > 0.02 && p[0] * side < 0.17 && p[1] > y0 && p[1] < y1 && p[2] > 0 && (!best || p[2] > best[2])) best = p;
+    if (!best) continue;
+    // sternum depth at the apex height = chest wall; how far the breast stands out from it
+    let st = -1e9; for (const p of pts) if (Math.abs(p[0]) < 0.012 && Math.abs(p[1] - best[1]) < 0.03 && p[2] > 0) st = Math.max(st, p[2]);
+    if (st < -1e8) st = best[2] - 0.05;
+    const prot = best[2] - st;
+    // nipple = centre of the breast mound (weighted toward its tip). A bigger breast spreads outward
+    // and sags, so the centre moves outward and down; never let it sit inside or above the apex.
+    const thr = st + 0.3 * prot;
+    let mx = 0, my = 0, mw = 0;
+    for (const p of pts) {
+      if (p[0] * side < 0.015 || p[2] <= thr || Math.abs(p[1] - best[1]) > 0.09) continue;
+      const w = (p[2] - thr) ** 2; mx += p[0] * w; my += p[1] * w; mw += w;
+    }
+    const ny = Math.min(mw ? my / mw : best[1], best[1]);
+    // seen from the front, the nipple sits a fixed share of the way from the midline to the body's
+    // outline at that height; breasts set close to the midline (like GLMB) get pushed out to that line,
+    // and larger breasts get a little extra outward.
+    let outer = 0; for (const p of pts) if (p[0] * side > 0 && Math.abs(p[1] - ny) < 0.02 && p[5] > 0.3 && p[2] > 0) outer = Math.max(outer, p[0] * side);
+    const ratio = 0.6 + 1.2 * prot;
+    const nx = side * Math.max(Math.abs(mw ? mx / mw : best[0]), Math.abs(best[0]), ratio * outer);
+    let near = best, nd = 1e9;
+    for (const p of pts) if (p[0] * side > 0 && p[5] > 0.2 && p[2] > st - 0.03) { const d = (p[0] - nx) ** 2 + (p[1] - ny) ** 2; if (d < nd) { nd = d; near = p; } }
+    best = [nx, ny, near[2], near[3], near[4]];
+    // least-squares affine (dx, dy) -> (u, v) from nearby front vertices on this side
+    const S = [[0,0,0],[0,0,0],[0,0,0]], bu = [0,0,0], bv = [0,0,0];
+    for (const p of pts) {
+      if (p[0] * side <= 0) continue;
+      const dx = p[0] - best[0], dy = p[1] - best[1], dz = p[2] - best[2];
+      if (dx*dx + dy*dy + dz*dz > 0.035*0.035 || p[5] < 0.1) continue;
+      const r = [dx, dy, 1];
+      for (let a = 0; a < 3; a++) { for (let b = 0; b < 3; b++) S[a][b] += r[a]*r[b]; bu[a] += r[a]*p[3]; bv[a] += r[a]*p[4]; }
+    }
+    const solve = (A, b) => { const m = A.map((r, i) => [...r, b[i]]);
+      for (let c = 0; c < 3; c++) { let piv = c; for (let r = c+1; r < 3; r++) if (Math.abs(m[r][c]) > Math.abs(m[piv][c])) piv = r;
+        [m[c], m[piv]] = [m[piv], m[c]]; if (Math.abs(m[c][c]) < 1e-12) return null;
+        for (let r = 0; r < 3; r++) if (r !== c) { const f = m[r][c] / m[c][c]; for (let k = c; k < 4; k++) m[r][k] -= f * m[c][k]; } }
+      return [m[0][3]/m[0][0], m[1][3]/m[1][1], m[2][3]/m[2][2]]; };
+    const cu = solve(S, bu), cv = solve(S, bv); if (!cu || !cv) continue;
+    const r = Math.min(0.036, Math.max(0.022, 0.018 + 0.2 * prot));
+    out.push({ side, u0: cu[2], v0: cv[2], Ux: cu[0], Uy: cu[1], Vx: cv[0], Vy: cv[1], r });
+  }
+  return out;
+}
+
+// ---------- pasties ----------
+const PASTY_SHAPES = [['heart','ハート'],['circle','丸'],['flower','花'],['star','星'],['spade','スペード'],['cross','クロス'],['bandage','絆創膏']];
+const PASTY_COLORS = [['black','黒','#1a181c'],['white','白','#faf9f7'],['pink','ピンク','#f08cba'],['red','赤','#c8192d'],['gold','金','#dcb75e'],['silverglitter','シルバーラメ','#cfd2d8'],['pinkglitter','ピンクラメ','#f3a0c8']];
+function shapePath(shape){
+  const p = new Path2D();
+  if (shape === 'circle') p.arc(0, 0, 1, 0, Math.PI*2);
+  else if (shape === 'heart' || shape === 'spade') {
+    const sg = shape === 'heart' ? 1 : -1;
+    for (let i = 0; i <= 80; i++) { const t = i/80*Math.PI*2;
+      const x = 16*Math.sin(t)**3/16, y = sg*((13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t))/16 + 0.12);
+      i ? p.lineTo(x, y) : p.moveTo(x, y); }
+    p.closePath();
+    if (shape === 'spade') { p.moveTo(0, -0.55); p.lineTo(0.3, -1.05); p.lineTo(-0.3, -1.05); p.closePath(); }
+  } else if (shape === 'flower') {
+    for (let k = 0; k < 6; k++) { const a = k*Math.PI/3; p.moveTo(0.58*Math.cos(a)+0.44, 0.58*Math.sin(a)); p.arc(0.58*Math.cos(a), 0.58*Math.sin(a), 0.44, 0, Math.PI*2); }
+    p.moveTo(0.62, 0); p.arc(0, 0, 0.62, 0, Math.PI*2);
+  } else if (shape === 'star') {
+    for (let k = 0; k < 10; k++) { const a = Math.PI/2 + k*Math.PI/5, rr = k % 2 ? 0.48 : 1.1; k ? p.lineTo(rr*Math.cos(a), rr*Math.sin(a)) : p.moveTo(rr*Math.cos(a), rr*Math.sin(a)); }
+    p.closePath();
+  } else if (shape === 'cross') {
+    const bar = new Path2D(); bar.roundRect(-1.15, -0.36, 2.3, 0.72, 0.18);
+    for (const a of [Math.PI/4, -Math.PI/4]) p.addPath(bar, new DOMMatrix().rotate(a*180/Math.PI));
+  } else if (shape === 'bandage') p.roundRect(-1.35, -0.55, 2.7, 1.1, 0.5);
+  return p;
+}
+function drawPasty(g, shape, color, scaleBox){
+  const col = (PASTY_COLORS.find(c => c[0] === color) || PASTY_COLORS[0])[2];
+  const path = shapePath(shape);
+  g.save(); g.clip(path, 'nonzero');
+  if (shape === 'bandage') {
+    g.fillStyle = '#e3bf9f'; g.fillRect(-2, -2, 4, 4);
+    g.fillStyle = '#f1dcc8'; g.fillRect(-0.45, -0.42, 0.9, 0.84);
+    g.fillStyle = 'rgba(150,110,80,.35)';
+    for (let x = -1.2; x <= 1.2; x += 0.22) for (let y = -0.4; y <= 0.4; y += 0.22) if (Math.abs(x) > 0.5) { g.beginPath(); g.arc(x, y, 0.035, 0, Math.PI*2); g.fill(); }
+  } else {
+    g.fillStyle = col; g.fillRect(-2, -2, 4, 4);
+    if (/glitter/.test(color)) {
+      let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+      for (let x = -1.2; x <= 1.2; x += 0.16) for (let y = -1.2; y <= 1.2; y += 0.16) {
+        const l = 60 + rnd()*40; g.fillStyle = `hsla(0,0%,${l}%,.85)`; g.beginPath(); g.arc(x + (rnd()-.5)*.04, y, 0.065, 0, Math.PI*2); g.fill(); }
+    } else {
+      const gr = g.createRadialGradient(-0.35, 0.35, 0.05, 0, 0, 1.3);
+      gr.addColorStop(0, 'rgba(255,255,255,.28)'); gr.addColorStop(0.5, 'rgba(255,255,255,0)'); gr.addColorStop(1, 'rgba(0,0,0,.18)');
+      g.fillStyle = gr; g.fillRect(-2, -2, 4, 4);
+    }
+  }
+  g.restore();
+  if (!['flower','cross'].includes(shape)) { g.lineWidth = 0.05; g.strokeStyle = 'rgba(0,0,0,.18)'; g.stroke(path); }
+}
+function paintPasties(g, W, H){
+  if (!body || !body.nips) return;
+  for (const n of body.nips) {
+    g.save();
+    g.setTransform(n.Ux*W*n.r, n.Vx*H*n.r, n.Uy*W*n.r, n.Vy*H*n.r, n.u0*W, n.v0*H);
+    drawPasty(g, state.pasty.shape, state.pasty.color, 1);
+    g.restore();
+  }
+}
+const BOTTOM_COLOR = c => ({ silverglitter: 'silver', pinkglitter: 'pink' }[c] || c);
+
+const imgCache = new Map();
+const loadImg = url => { if (!imgCache.has(url)) imgCache.set(url, new Promise((ok, ng) => { const i = new Image(); i.onload = () => ok(i); i.onerror = ng; i.src = url; })); return imgCache.get(url); };
+const allItems = () => catalog.categories.flatMap(c => c.items.map(i => ({ ...i, cat: c.id })));
+async function applyOutfit(){
+  if (!body || !catalog) return;
+  const pasties = state.inner === 'pasties';
+  const innerItem = catalog.inner.find(i => i.id === state.inner);
+  const it = allItems().find(i => i.id === state.outfit);
+  const tatImgs = await Promise.all(state.tattoos.map(id => { const t = (catalog.tattoos || []).find(x => x.id === id); return t ? loadImg(t[state.ink]) : null; }));
+  const [baseImg, bottomImg, outfitImg] = await Promise.all([
+    innerItem && innerItem.file ? loadImg(innerItem.file) : null,
+    pasties && state.pasty.bottom ? loadImg(`ov/cover_bottom_${state.pasty.shape === 'bandage' ? 'beige' : BOTTOM_COLOR(state.pasty.color)}.webp`) : null,
+    it ? loadImg(state.sheer && it.sheer ? it.sheer : it.file) : null]);
+  const g = body.work.getContext('2d'); const { width: Wd, height: Ht } = body.work;
+  g.setTransform(1,0,0,1,0,0); g.clearRect(0,0,Wd,Ht); g.drawImage(body.base, 0, 0);
+  for (const t of tatImgs) if (t) g.drawImage(t, 0, 0, Wd, Ht);   // ink sits on the skin, under everything worn
+  if (baseImg) g.drawImage(baseImg, 0, 0, Wd, Ht);
+  if (pasties) { paintPasties(g, Wd, Ht); g.setTransform(1,0,0,1,0,0); }
+  if (bottomImg) g.drawImage(bottomImg, 0, 0, Wd, Ht);
+  if (outfitImg) g.drawImage(outfitImg, 0, 0, Wd, Ht);
+  body.tex.needsUpdate = true;
+}
+
+/* ---------- wardrobe panel ---------- */
+function thumb(file){ const i = document.createElement('i'); i.className = 'th' + (file ? '' : ' none'); if (file) i.style.backgroundImage = `url(${file})`; else i.textContent = '—'; return i; }
+function renderSuits(){
+  $('#cats').innerHTML = catalog.categories.map(c => `<button class="chip" data-cat="${c.id}">${c.label}</button>`).join('');
+  press('[data-cat]','cat',state.cat);
+  const cat = catalog.categories.find(c => c.id === state.cat);
+  $('#sheerRow').hidden = cat.id !== 'lace';
+  const grid = $('#suits'); grid.innerHTML = '';
+  for (const it of [{ id: '', name: '着ない', file: null }, ...cat.items]) {
+    const b = document.createElement('button'); b.className = 'btn suit'; b.dataset.suit = it.id;
+    b.setAttribute('aria-pressed', (state.outfit || '') === it.id);
+    const sp = document.createElement('span'); sp.textContent = it.name;
+    b.append(thumb(it.file), sp); grid.append(b);
+  }
+}
+function renderTattoos(){
+  $('#tink').innerHTML = [['color','ロゴの色','#1f6fa0'],['black','黒','#14181f'],['red','赤','#ba1626'],['navy','紺','#162456']].map(([id,n,h]) => `<button class="chip" data-ink="${id}"><i style="background:${h}"></i>${n}</button>`).join('');
+  press('[data-ink]','ink',state.ink);
+  $('#tattoos').innerHTML = (catalog.tattoos || []).map(t => `<button class="btn" data-tat="${t.id}" aria-pressed="${state.tattoos.includes(t.id)}">${t.name}</button>`).join('');
+}
+$('#tink').addEventListener('click', e => { const b = e.target.closest('[data-ink]'); if (b) { state.ink = b.dataset.ink; renderTattoos(); applyOutfit(); } });
+$('#tattoos').addEventListener('click', e => { const b = e.target.closest('[data-tat]'); if (!b) return; const id = b.dataset.tat;
+  state.tattoos = state.tattoos.includes(id) ? state.tattoos.filter(x => x !== id) : [...state.tattoos, id]; renderTattoos(); applyOutfit(); });
+function renderInner(){
+  const pg = $('#pasties'); pg.innerHTML = '';
+  for (const [id, name] of PASTY_SHAPES) {
+    const b = document.createElement('button'); b.className = 'btn suit'; b.dataset.pasty = id;
+    b.setAttribute('aria-pressed', state.inner === 'pasties' && state.pasty.shape === id);
+    const cv = document.createElement('canvas'); cv.width = 120; cv.height = 136; cv.className = 'th';
+    const g = cv.getContext('2d'); g.setTransform(38,0,0,-38,60,68); drawPasty(g, id, state.pasty.color, 1);
+    const sp = document.createElement('span'); sp.textContent = name; b.append(cv, sp); pg.append(b);
+  }
+  $('#pcolors').innerHTML = PASTY_COLORS.map(([id, name, hex]) => `<button class="chip" data-pc="${id}"><i style="background:${hex}"></i>${name}</button>`).join('');
+  press('[data-pc]','pc',state.pasty.color);
+  $('#bottom').checked = state.pasty.bottom;
+  const bg = $('#bases'); bg.innerHTML = '';
+  for (const it of catalog.inner.filter(i => !i.group || i.group === 'base')) {
+    const b = document.createElement('button'); b.className = 'btn suit'; b.dataset.base = it.id;
+    b.setAttribute('aria-pressed', state.inner === it.id);
+    const sp = document.createElement('span'); sp.textContent = it.id === 'none' ? 'インナーなし' : it.name;
+    b.append(thumb(it.file), sp); bg.append(b);
+  }
+}
+$('#cats').addEventListener('click', e => { const b = e.target.closest('[data-cat]'); if (b) { state.cat = b.dataset.cat; renderSuits(); } });
+$('#suits').addEventListener('click', e => { const b = e.target.closest('[data-suit]'); if (b) { state.outfit = b.dataset.suit || null; renderSuits(); applyOutfit(); } });
+$('#sheer').addEventListener('change', e => { state.sheer = e.target.checked; applyOutfit(); });
+$('#pasties').addEventListener('click', e => { const b = e.target.closest('[data-pasty]'); if (b) { state.inner = 'pasties'; state.pasty.shape = b.dataset.pasty; renderInner(); applyOutfit(); } });
+$('#pcolors').addEventListener('click', e => { const b = e.target.closest('[data-pc]'); if (b) { state.inner = 'pasties'; state.pasty.color = b.dataset.pc; renderInner(); applyOutfit(); } });
+$('#bottom').addEventListener('change', e => { state.pasty.bottom = e.target.checked; state.inner = 'pasties'; renderInner(); applyOutfit(); });
+$('#bases').addEventListener('click', e => { const b = e.target.closest('[data-base]'); if (b) { state.inner = b.dataset.base; renderInner(); applyOutfit(); } });
+
+/* ---------- loading ---------- */
+const loader = new GLTFLoader();
+loader.register(p => new VRMLoaderPlugin(p));
+function showLoading(p, text){ $('#loading').classList.remove('hide'); $('#lbar').style.width = Math.round(Math.min(1,p)*100)+'%'; $('#ltext').textContent = text || `読み込み中… ${Math.round(Math.min(1,p)*100)}%`; }
+async function fetchBundled(name){
+  const parts = [];
+  for (let i = 0; i < 2; i++) { const r = await fetch(`model/${name}.b64.${i}.txt`); if (!r.ok) return null; parts.push(await r.text()); showLoading(0.3 + 0.3*i); }
+  const bin = atob(parts.join('')); const u = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+  return u.buffer;
+}
+async function fetchProgress(url){
+  const r = await fetch(url); if (!r.ok) throw new Error(r.status);
+  const total = +r.headers.get('content-length') || 0; const rd = r.body.getReader(); const chunks = []; let got = 0;
+  for (;;) { const { done, value } = await rd.read(); if (done) break; chunks.push(value); got += value.length; showLoading(total ? got/total*0.9 : got/16e6); }
+  return await new Blob(chunks).arrayBuffer();
+}
+let bundled = false;
+async function loadModel(name){
+  const token = ++loadToken;
+  showLoading(0);
+  try {
+    let buf = bundled && BUNDLED.includes(name) ? await fetchBundled(name) : null;
+    if (!buf) buf = await fetchProgress(repoURL(name));
+    if (token !== loadToken) return;
+    await parseVRM(buf, token);
+  } catch (err) {
+    console.error(err);
+    if (token === loadToken) showLoading(0, 'モデルを読み込めませんでした。「VRMを開く」から手元のファイルを選んでください。');
+  }
+}
+async function parseVRM(buf, token){
+  showLoading(0.95, 'モデルを組み立て中…');
+  const gltf = await loader.parseAsync(buf, '');
+  if (token !== loadToken) { VRMUtils.deepDispose(gltf.scene); return; }
+  const v = gltf.userData.vrm;
+  VRMUtils.removeUnnecessaryVertices(gltf.scene);
+  VRMUtils.combineSkeletons(gltf.scene);
+  v.scene.traverse(o => o.frustumCulled = false);
+  if (v.meta && v.meta.metaVersion === '0') VRMUtils.rotateVRM0(v);
+  if (vrm) { scene.remove(vrm.scene); VRMUtils.deepDispose(vrm.scene); }
+  vrm = v; scene.add(vrm.scene);
+  findBody();          // measures the bust in the rest pose, before any pose is applied
+  setupModel();
+  await applyOutfit();
+  $('#loading').classList.add('hide');
+}
+function setupModel(){
+  BONES.forEach(n => B[n] = vrm.humanoid.getNormalizedBoneNode(n));
+  hipsRest.copy(B.hips.position);
+  vrm.scene.updateMatrixWorld(true);
+  const wp = n => { const o = vrm.humanoid.getRawBoneNode(n); return o ? o.getWorldPosition(new THREE.Vector3()).y : 0; };
+  const head = wp('head'), hips = wp('hips');
+  marks = {head, top:head+0.17, chest:wp('chest')||(head+hips)/2, hips, seg:Math.max(0.2,(hips-wp('leftFoot'))/2)};
+  vrm.lookAt.autoUpdate = true;
+  setLook(lookOn);
+  snap = true;
+  goCam(camMode, true);
+}
+
+/* ---------- camera ---------- */
+let tween = null;
+function camGoal(mode){
+  const fovT = Math.tan(THREE.MathUtils.degToRad(camera.fov/2));
+  let ty, d;
+  if (mode === 'face') { ty = marks.head + 0.07; d = 0.85; }
+  else if (mode === 'upper') { ty = (marks.head + marks.chest)/2 - 0.02; d = 1.35; }
+  else if (mode === 'thigh') { ty = (marks.head + marks.hips)/2 + 0.13; d = 0.62/fovT; if (camera.aspect < 0.8) d /= Math.max(0.6, camera.aspect/0.8); }
+  else { ty = marks.top*0.46; d = (marks.top*0.66)/fovT; if (camera.aspect < 1) d /= Math.max(0.55, camera.aspect); }
+  let dir = camera.position.clone().sub(controls.target); dir.y = 0;
+  if (dir.lengthSq() < 1e-4) dir.set(0,0,1);
+  dir.normalize();
+  if (mode === 'back') dir.set(0,0,-1); else if (dir.z < 0 && camMode === 'back') dir.set(0,0,1);
+  const pos = new THREE.Vector3(dir.x*d, ty + d*0.05, dir.z*d);
+  return {pos, tgt:new THREE.Vector3(0,ty,0)};
+}
+function startTween(pos, tgt, instant){
+  if (instant) { camera.position.copy(pos); controls.target.copy(tgt); tween = null; return; }
+  tween = {p0:camera.position.clone(), t0:controls.target.clone(), p1:pos, t1:tgt, k:0};
+}
+function goCam(mode, instant){ const g = camGoal(mode); camMode = mode; press('[data-cam]','cam',mode); startTween(g.pos, g.tgt, instant); }
+function zoom(f){
+  const off = camera.position.clone().sub(controls.target).multiplyScalar(f);
+  off.setLength(THREE.MathUtils.clamp(off.length(), controls.minDistance, controls.maxDistance));
+  startTween(controls.target.clone().add(off), controls.target.clone());
+}
+
+/* ---------- expressions ---------- */
+function setExpr(k){ expr = k; press('[data-e]','e',k); }
+function setLook(on){ lookOn = on; if (!vrm) return; vrm.lookAt.target = on ? camera : null; if (!on && vrm.lookAt.reset) vrm.lookAt.reset(); }
+function updateExpr(dt){
+  const k = 1 - Math.exp(-dt*9);
+  for (const n of ['happy','angry','sad','relaxed','surprised']) { const tgt = expr === n ? strength : 0; W[n] += (tgt - W[n])*k; }
+  let b = 0;
+  if (blinkOn) {
+    blinkTimer -= dt;
+    if (blinkTimer <= 0 && blinkT < 0) { blinkT = 0; blinkTimer = 2 + Math.random()*3.5; }
+    if (blinkT >= 0) { blinkT += dt; const p = blinkT/0.16; b = p < 1 ? Math.sin(p*Math.PI) : 0; if (p >= 1) blinkT = -1; }
+  }
+  W.blink = b * Math.max(0, 1 - (W.happy + W.relaxed*0.6 + W.surprised*0.8));
+  vowelTimer -= dt;
+  if (vowelTimer <= 0) { vowelTimer = 0.09 + Math.random()*0.12; vowel = ['aa','ih','ou','ee','oh'][Math.floor(Math.random()*5)]; vowelAmt = talk && Math.random() > 0.12 ? 0.35 + Math.random()*0.5 : 0; }
+  const km = 1 - Math.exp(-dt*20);
+  for (const v of ['aa','ih','ou','ee','oh']) { const tgt = v === vowel ? vowelAmt : 0; W[v] += (tgt - W[v])*km; }
+  const em = vrm.expressionManager; if (!em) return;
+  for (const n in W) em.setValue(n, W[n]);
+}
+
+/* ---------- motions ---------- */
+function setAct(k){ act = k; actT = 0; press('[data-a]','a',k); if (ACT_EXPR[k]) setExpr(ACT_EXPR[k]); }
+const ss = x => x*x*(3-2*x);
+function squat(P, a){ P.leftUpperLeg = P.rightUpperLeg = [-a,0,0]; P.leftLowerLeg = P.rightLowerLeg = [a*2,0,0]; P.leftFoot = P.rightFoot = [-a,0,0]; return -2*marks.seg*(1-Math.cos(a)); }
+function basePose(t){
+  const br = Math.sin(t*2.1);
+  return {
+    hips:[0,0.035*Math.sin(t*0.5),0], spine:[0.015*br,0,0], chest:[0.015*br,0,0], neck:[0,0,0],
+    head:[0.03*Math.sin(t*0.7), 0.06*Math.sin(t*0.43), 0.035*Math.sin(t*0.61)],
+    leftUpperArm:[0,0,-1.2+0.025*br], rightUpperArm:[0,0,1.2-0.025*br],
+    leftLowerArm:[0,-0.22,0], rightLowerArm:[0,0.22,0], leftHand:[0,0,-0.1], rightHand:[0,0,0.1],
+    leftUpperLeg:[0,0,0], rightUpperLeg:[0,0,0], leftLowerLeg:[0,0,0], rightLowerLeg:[0,0,0], leftFoot:[0,0,0], rightFoot:[0,0,0],
+    ...Object.fromEntries(FINGERS.map(n => [n,[0,0,0]])), hy:0 };
+}
+function actPose(name, t){
+  const P = {}; const s = Math.sin;
+  switch (name) {
+    case 'wave': P.rightUpperArm = [0,0.35,0.2]; P.rightLowerArm = [0,0.25,-1.85+0.38*s(t*9)]; P.rightHand = [0,0,0.18*s(t*9)]; P.head = [0.02,-0.1,0.12]; P.spine = [0,0,0.04]; break;
+    case 'bow': P.spine = [0.42,0,0]; P.chest = [0.18,0,0]; P.neck = [0.1,0,0]; P.head = [0.18,0,0]; P.leftUpperArm = [0,-0.4,-1.25]; P.rightUpperArm = [0,0.4,1.25]; P.leftLowerArm = [0,-0.7,0]; P.rightLowerArm = [0,0.7,0]; break;
+    case 'nod': P.head = [0.3*Math.max(0, s(t*Math.PI*2/0.75)),0,0]; P.neck = [0.08*Math.max(0, s(t*Math.PI*2/0.75)),0,0]; break;
+    case 'tilt': P.head = [0.04,0.12,0.34]; P.neck = [0,0,0.1]; P.spine = [0,0,-0.04]; break;
+    case 'think': P.rightUpperArm = [0,0.5,1.15]; P.rightLowerArm = [0,2.6,0]; P.rightHand = [0,0,-0.3]; P.leftUpperArm = [0,-0.6,-1.15]; P.leftLowerArm = [0,-1.5,0]; P.head = [-0.08,0.15+0.05*s(t*1.3),0.18]; P.neck = [-0.04,0,0.05]; break;
+    case 'shy': P.leftUpperArm = [0,-0.55,-1.0]; P.rightUpperArm = [0,0.55,1.0]; P.leftLowerArm = [0,-1.9,0]; P.rightLowerArm = [0,1.9,0]; P.head = [0.22,-0.25+0.08*s(t*2),-0.12]; P.spine = [0.06,0.12*s(t*1.6),0]; P.hips = [0,0.15*s(t*1.6),0]; break;
+    case 'dance': { const b = t*Math.PI*2*1.05, h = s(b/2), bo = Math.abs(s(b));
+      P.hy = squat(P, 0.32*bo); P.hips = [0,0.28*h,0.05*h]; P.spine = [0.04,0,-0.08*h]; P.chest = [0,-0.12*h,0]; P.head = [0.04,-0.12*h,0.14*h];
+      P.leftUpperArm = [0,-0.35,-0.85+0.45*s(b)]; P.rightUpperArm = [0,0.35,0.85+0.45*s(b)]; P.leftLowerArm = [0,-1.1,0]; P.rightLowerArm = [0,1.1,0]; break; }
+    case 'hip': P.leftUpperArm = [0,0.3,-0.75]; P.rightUpperArm = [0,-0.3,0.75]; P.leftLowerArm = [0,-0.4,-1.5]; P.rightLowerArm = [0,0.4,1.5]; P.leftHand = [0,0,0.3]; P.rightHand = [0,0,-0.3]; P.hips = [0,0,0.04]; P.spine = [0,0,-0.05]; P.head = [0.02,0,0.08]; P.leftUpperLeg = [0,0,0.05]; P.rightUpperLeg = [-0.12,0,0]; P.rightLowerLeg = [0.22,0,0]; break;
+    case 'head': P.rightUpperArm = [0,0.2,-0.95]; P.rightLowerArm = [0,0,-2.3]; P.rightHand = [0,0,-0.2]; P.leftUpperArm = [0,0.3,-0.75]; P.leftLowerArm = [0,-0.4,-1.5]; P.leftHand = [0,0,0.3]; P.hips = [0,0.1,-0.05]; P.spine = [0,0,0.06]; P.head = [0.02,0,-0.12]; P.leftUpperLeg = [-0.12,0,0]; P.leftLowerLeg = [0.22,0,0]; break;
+    case 'behind': P.leftUpperArm = [0,0.25,0.95]; P.rightUpperArm = [0,-0.25,-0.95]; P.leftLowerArm = [0,0,2.3]; P.rightLowerArm = [0,0,-2.3]; P.spine = [-0.06,0,0]; P.chest = [-0.04,0,0]; P.head = [-0.04,0,0.1]; P.hips = [0,0,0.05]; P.rightUpperLeg = [-0.1,0,0]; P.rightLowerLeg = [0.2,0,0]; break;
+    case 'turn': P.hips = [0,2.2,0]; P.spine = [0,-0.35,0]; P.chest = [0,-0.35,0]; P.neck = [0,-0.45,0]; P.head = [0.05,-0.55,0.08]; P.leftUpperArm = [0,0,-1.25]; P.rightUpperArm = [0,-0.15,1.3]; P.rightLowerArm = [0,0.3,0]; P.leftUpperLeg = [-0.1,0,0]; P.leftLowerLeg = [0.2,0,0]; break;
+    case 'lean': P.hips = [0.55,0,0]; P.spine = [0.2,0,0]; P.chest = [0.15,0,0]; P.neck = [-0.35,0,0]; P.head = [-0.45,0,0.12]; P.leftUpperArm = [0,-0.35,-1.25]; P.rightUpperArm = [0,0.35,1.25]; P.leftLowerArm = [0,-0.25,0]; P.rightLowerArm = [0,0.25,0]; P.leftUpperLeg = [-0.75,0,0.04]; P.rightUpperLeg = [-0.75,0,-0.04]; P.leftLowerLeg = [0.45,0,0]; P.rightLowerLeg = [0.45,0,0]; P.leftFoot = [-0.25,0,0]; P.rightFoot = [-0.25,0,0]; P.hy = -0.06; break;
+    case 'scurve': P.hips = [0,0.35,0.1]; P.spine = [0,-0.15,-0.1]; P.chest = [0,-0.1,-0.06]; P.head = [0,-0.1,0.12]; P.leftUpperArm = [0,0.3,-0.75]; P.leftLowerArm = [0,-0.4,-1.5]; P.leftHand = [0,0,0.3]; P.rightUpperArm = [0,0.1,1.4]; P.rightLowerArm = [0,0.25,0]; P.leftUpperLeg = [0,0,-0.1]; P.rightUpperLeg = [-0.2,0,0.12]; P.rightLowerLeg = [0.35,0,0]; P.rightFoot = [-0.15,0,0]; break;
+    case 'peace': P.rightUpperArm = [0,0.5,0.9]; P.rightLowerArm = [0,0,-2.3]; P.rightHand = [0,0,0]; P.rightRingProximal = P.rightLittleProximal = [0,0,1.3]; P.rightRingIntermediate = P.rightLittleIntermediate = [0,0,1.4]; P.rightThumbProximal = [0,-0.5,0.4]; P.rightThumbDistal = [0,-0.6,0]; P.rightIndexProximal = [0,0,-0.15]; P.rightMiddleProximal = [0,0,0.15]; P.leftUpperArm = [0,0.3,-0.75]; P.leftLowerArm = [0,-0.4,-1.5]; P.leftHand = [0,0,0.3]; P.head = [0.04,0.08,0.15]; P.hips = [0,0,-0.04]; P.rightUpperLeg = [-0.12,0,0]; P.rightLowerLeg = [0.22,0,0]; break;
+    case 'crouch': P.hy = squat(P, 0.95); P.spine = [0.25,0,0]; P.neck = [-0.15,0,0]; P.head = [-0.2,0,0.12]; P.leftUpperLeg = [-0.95,0,0.3]; P.rightUpperLeg = [-0.95,0,-0.3]; P.leftUpperArm = [0,-0.9,-1.1]; P.rightUpperArm = [0,0.9,1.1]; P.leftLowerArm = [0,-0.6,0]; P.rightLowerArm = [0,0.6,0]; break;
+    case 'knee': P.hy = squat(P, 1.2); P.spine = [0.35,0,0]; P.neck = [-0.2,0,0]; P.head = [-0.15,0.1,0.18]; P.leftUpperArm = [0,-1.2,-0.9]; P.rightUpperArm = [0,1.2,0.9]; P.leftLowerArm = [0,-1.3,0]; P.rightLowerArm = [0,1.3,0]; break;
+    case 'jump': { const p = (t % 0.8)/0.8;
+      if (p < 0.55) { const q = s(Math.PI*p/0.55); P.hy = 0.13*q; squat(P, 0.12*(1-q)); P.leftUpperArm = [0,0,-0.5]; P.rightUpperArm = [0,0,0.5]; }
+      else { const q = s(Math.PI*(p-0.55)/0.45); P.hy = squat(P, 0.45*q); P.leftUpperArm = [0,-0.2,-1.0]; P.rightUpperArm = [0,0.2,1.0]; P.spine = [0.15*q,0,0]; }
+      P.leftLowerArm = [0,-0.5,0]; P.rightLowerArm = [0,0.5,0]; P.head = [-0.05,0,0]; break; }
+  }
+  return P;
+}
+const qT = new THREE.Quaternion(), eT = new THREE.Euler(), vC = new THREE.Vector3(), vH = new THREE.Vector3();
+function updatePose(dt){
+  actT += dt;
+  if (ONESHOT[act] && actT >= ONESHOT[act]) setAct('idle');
+  const base = basePose(T);
+  let w = 0, A = {};
+  if (act !== 'idle') { A = actPose(act, actT); const d = ONESHOT[act]; w = d ? ss(Math.max(0, Math.min(1, actT/0.35, (d-actT)/0.45))) : ss(Math.min(1, actT/0.35)); }
+  const target = {};
+  for (const n of BONES) { const a = base[n], b = A[n]; target[n] = b ? [a[0]+(b[0]-a[0])*w, a[1]+(b[1]-a[1])*w, a[2]+(b[2]-a[2])*w] : a.slice(); }
+  const hyT = (A.hy || 0)*w;
+  if (lookOn && act !== 'bow' && B.head) {
+    vrm.scene.worldToLocal(B.head.getWorldPosition(vH));
+    vrm.scene.worldToLocal(vC.copy(camera.position)).sub(vH);
+    const yaw = Math.atan2(vC.x, vC.z), pitch = Math.atan2(vC.y, Math.hypot(vC.x, vC.z));
+    if (Math.abs(yaw) < 1.6) { target.head[1] += THREE.MathUtils.clamp(yaw*0.35, -0.45, 0.45); target.head[0] += THREE.MathUtils.clamp(-pitch*0.3, -0.25, 0.25); }
+  }
+  const k = snap ? 1 : 1 - Math.exp(-dt*14);
+  for (const n of BONES) { if (!B[n]) continue; qT.setFromEuler(eT.set(target[n][0], target[n][1], target[n][2])); B[n].quaternion.slerp(qT, k); }
+  hipsY += (hyT - hipsY)*k;
+  B.hips.position.set(hipsRest.x, hipsRest.y + hipsY, hipsRest.z);
+  snap = false;
+}
+
+/* ---------- loop ---------- */
+let frozen = false;
+window.glmh = { state, applyOutfit, getVRM: () => vrm,
+  setView: (x,y,z,ty) => { tween = null; controls.target.set(0,ty,0); camera.position.set(x,y,z); controls.update(); },
+  freeze: v => { frozen = v; },
+  exportPasties: (shape, color) => { const c = document.createElement('canvas'); c.width = body.work.width; c.height = body.work.height; const g = c.getContext('2d'); const keep = state.pasty; state.pasty = { ...keep, shape, color }; paintPasties(g, c.width, c.height); state.pasty = keep; return c.toDataURL('image/png'); } };
+const clock = new THREE.Clock();
+renderer.setAnimationLoop(() => {
+  const dt = Math.min(clock.getDelta(), 0.05); T += dt;
+  if (tween) { tween.k = Math.min(1, tween.k + dt/0.8); const e = ss(tween.k); camera.position.lerpVectors(tween.p0, tween.p1, e); controls.target.lerpVectors(tween.t0, tween.t1, e); if (tween.k >= 1) tween = null; }
+  controls.update();
+  if (vrm && !frozen) { updatePose(dt); updateExpr(dt); vrm.update(dt); }
+  renderer.render(scene, camera);
+});
+
+/* ---------- events ---------- */
+$('#poses').addEventListener('click', e => { const b = e.target.closest('[data-a]'); if (b) setAct(b.dataset.a); });
+/* ---------- shutter ---------- */
+function paintBackdrop(g, w, h){
+  const bg = stage.dataset.bg, css = getComputedStyle(document.documentElement);
+  if (bg === 'white') { g.fillStyle = '#fff'; g.fillRect(0,0,w,h); return; }
+  if (bg === 'sea') {
+    const L = g.createLinearGradient(0,0,0,h);
+    [[0,'#7cc8f5'],[.52,'#bfe6ff'],[.57,'#e8f6ff'],[.573,'#58c3e6'],[.66,'#3aa9d8'],[.74,'#2f97c9'],[.744,'#bfe9f2'],[.76,'#f6e3c0'],[1,'#f3d9ae']].forEach(([o,c]) => L.addColorStop(o,c));
+    g.fillStyle = L; g.fillRect(0,0,w,h);
+    const sx = w*.8, sy = h*.14, k = w/stage.clientWidth, S = g.createRadialGradient(sx,sy,0,sx,sy,220*k);
+    S.addColorStop(0,'rgba(255,250,225,.95)'); S.addColorStop(50/220,'rgba(255,243,196,.6)'); S.addColorStop(1,'rgba(255,243,196,0)');
+    g.fillStyle = S; g.fillRect(0,0,w,h); return;
+  }
+  const L = g.createLinearGradient(0,0,0,h);
+  L.addColorStop(0, css.getPropertyValue('--sky1').trim() || '#cfe6ff'); L.addColorStop(1, css.getPropertyValue('--sky2').trim() || '#ffe6dc');
+  g.fillStyle = L; g.fillRect(0,0,w,h);
+}
+let shotURL = null;
+function takePhoto(){
+  if (!vrm) return;
+  renderer.render(scene, camera);                 // draw now so the buffer is still valid when we read it
+  const src = renderer.domElement, w = src.width, h = src.height;
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const g = c.getContext('2d'); paintBackdrop(g, w, h); g.drawImage(src, 0, 0);
+  g.font = `800 ${Math.round(h*0.022)}px "M PLUS Rounded 1c",sans-serif`; g.fillStyle = 'rgba(255,255,255,.85)'; g.textAlign = 'right';
+  g.fillText('BAYSIDE LABORATORY', w - h*0.02, h - h*0.02);
+  const f = $('#flash'); f.classList.add('on'); requestAnimationFrame(() => requestAnimationFrame(() => f.classList.remove('on')));
+  c.toBlob(b => {
+    if (shotURL) URL.revokeObjectURL(shotURL);
+    shotURL = URL.createObjectURL(b); shotBlob = b;
+    $('#shotImg').src = c.toDataURL('image/png');   // data URL so a long-press can save it on phones
+    $('#shot').hidden = false;
+  }, 'image/png');
+}
+$('#shutter').addEventListener('click', takePhoto);
+$('#shotClose').addEventListener('click', () => { $('#shot').hidden = true; });
+$('#shot').addEventListener('click', e => { if (e.target.id === 'shot') $('#shot').hidden = true; });
+let shotBlob = null, dl = null;
+if (window.claude && window.claude.use) window.claude.use('downloads').then(d => { dl = d; }).catch(() => {});
+$('#shotSave').addEventListener('click', async () => {
+  const name = `glmh_${new Date().toISOString().replace(/[-:T]/g,'').slice(0,14)}.png`;
+  const note = $('#shotNote');
+  if (dl) {                                    // inside claude.ai: the viewer confirms the save
+    try { await dl.save({ filename: name, data: shotBlob }); note.textContent = '保存しました。'; }
+    catch (err) { note.textContent = err && err.code === 'declined' ? '保存をキャンセルしました。' : 'ここでは保存できませんでした。画像を長押し（パソコンは右クリック）して保存してください。'; }
+    return;
+  }
+  if (!window.claude) {                        // own site (GitHub Pages / Wix): a normal download
+    const a = document.createElement('a'); a.href = shotURL; a.download = name; document.body.append(a); a.click(); a.remove();
+  }
+  note.textContent = 'ダウンロードされない場合は、画像を長押し（パソコンは右クリック）して保存してください。';
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') $('#shot').hidden = true; });
+
+$('#cam').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.cam) goCam(b.dataset.cam); else zoom(+b.dataset.zoom); });
+$('#expr').addEventListener('click', e => { const b = e.target.closest('[data-e]'); if (b) setExpr(b.dataset.e); });
+$('#acts').addEventListener('click', e => { const b = e.target.closest('[data-a]'); if (b) setAct(b.dataset.a); });
+$('#str').addEventListener('input', e => strength = e.target.value/100);
+$('#talk').addEventListener('change', e => talk = e.target.checked);
+$('#blink').addEventListener('change', e => blinkOn = e.target.checked);
+$('#look').addEventListener('change', e => setLook(e.target.checked));
+$('#spin').addEventListener('change', e => controls.autoRotate = e.target.checked);
+controls.addEventListener('start', () => { tween = null; press('[data-cam]','cam',''); });
+$('#modelSel').addEventListener('change', e => loadModel(e.target.value));
+$('#fileIn').addEventListener('change', async e => {
+  const f = e.target.files[0]; if (!f) return;
+  const token = ++loadToken; showLoading(0.5, 'ファイルを読み込み中…');
+  try { await parseVRM(await f.arrayBuffer(), token); } catch (err) { console.error(err); showLoading(0, 'このファイルは開けませんでした。VRM 1.0 / 0.x の .vrm を選んでください。'); }
+});
+
+let bg0 = 'sea'; try { bg0 = localStorage.getItem('glmhBg') || 'sea'; } catch (e) {}
+setBg(['sea','white','paper'].includes(bg0) ? bg0 : 'sea');
+setExpr('neutral'); setAct('idle');
+resize();
+(async () => {
+  catalog = await (await fetch('catalog.json')).json();
+  renderSuits(); renderTattoos(); renderInner();
+  const probe = await fetch('model/GLMH000.b64.0.txt', { method: 'HEAD' }).catch(() => null);
+  bundled = !!(probe && probe.ok);
+  const groups = bundled ? [['GLM-H',['GLMH000']],['GLM-A',['GLMA000']],['GLM-B',['GLMB000']],['GLM-J',['GLMJ000']]] : ['H','A','B','J'].map(k => ['GLM-'+k, MODELS.filter(m => m[3] === k)]);
+  const sel = $('#modelSel');
+  for (const [label, list] of groups) { const og = document.createElement('optgroup'); og.label = label; for (const m of list) og.append(new Option(m, m)); sel.append(og); }
+  loadModel(sel.value);
+})();
+}
+</script>
+</body></html>
